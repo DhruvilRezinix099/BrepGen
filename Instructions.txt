@@ -22,3 +22,4 @@ conda run -n brepgen_env pip install pythonocc-core
 conda install -n brepgen_env -c conda-forge pythonocc-core=7.7.2 -y
 conda run -n brepgen_env pip show torch
 conda run -n brepgen_env pip install chamferdist --no-build-isolation
+conda run -n brepgen_env pip install "scipy<1.13" --force-reinstall
