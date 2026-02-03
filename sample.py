@@ -45,7 +45,7 @@ def sample(eval_args):
 
     if eval_args['use_cf']:
         class_label = torch.LongTensor([text2int[eval_args['class_label']]]*batch_size + \
-                                       [text2int['uncond']]*batch_size).cuda().reshape(-1,1) 
+                                       [text2int['uncond']]*batch_size).to(device).reshape(-1,1) 
         w = 0.6
     else:
         class_label = None
@@ -54,19 +54,19 @@ def sample(eval_args):
         os.makedirs(save_folder)
 
     surfPos_model = SurfPosNet(eval_args['use_cf'])
-    surfPos_model.load_state_dict(torch.load(eval_args['surfpos_weight']))  
+    surfPos_model.load_state_dict(torch.load(eval_args['surfpos_weight'], map_location=device))  
     surfPos_model = surfPos_model.to(device).eval()
 
     surfZ_model = SurfZNet(eval_args['use_cf'])
-    surfZ_model.load_state_dict(torch.load(eval_args['surfz_weight']))
+    surfZ_model.load_state_dict(torch.load(eval_args['surfz_weight'], map_location=device))
     surfZ_model = surfZ_model.to(device).eval()
 
     edgePos_model = EdgePosNet(eval_args['use_cf'])
-    edgePos_model.load_state_dict(torch.load(eval_args['edgepos_weight']))
+    edgePos_model.load_state_dict(torch.load(eval_args['edgepos_weight'], map_location=device))
     edgePos_model = edgePos_model.to(device).eval()
 
     edgeZ_model = EdgeZNet(eval_args['use_cf'])
-    edgeZ_model.load_state_dict(torch.load(eval_args['edgez_weight']))
+    edgeZ_model.load_state_dict(torch.load(eval_args['edgez_weight'], map_location=device))
     edgeZ_model = edgeZ_model.to(device).eval()
 
     surf_vae = AutoencoderKLFastDecode(in_channels=3,
@@ -80,7 +80,7 @@ def sample(eval_args):
         norm_num_groups=32,
         sample_size=512,
     )
-    surf_vae.load_state_dict(torch.load(eval_args['surfvae_weight']), strict=False)
+    surf_vae.load_state_dict(torch.load(eval_args['surfvae_weight'], map_location=device), strict=False)
     surf_vae = surf_vae.to(device).eval()
 
     edge_vae = AutoencoderKL1DFastDecode(
@@ -95,7 +95,7 @@ def sample(eval_args):
         norm_num_groups=32,
         sample_size=512
     )
-    edge_vae.load_state_dict(torch.load(eval_args['edgevae_weight']), strict=False)
+    edge_vae.load_state_dict(torch.load(eval_args['edgevae_weight'], map_location=device), strict=False)
     edge_vae = edge_vae.to(device).eval()
 
     pndm_scheduler = PNDMScheduler(
@@ -127,7 +127,7 @@ def sample(eval_args):
 
             pndm_scheduler.set_timesteps(200)  
             for t in tqdm(pndm_scheduler.timesteps[:158]):#
-                timesteps = t.reshape(-1).cuda()
+                timesteps = t.reshape(-1).to(device)
                 if class_label is not None:
                     _surfPos_ = surfPos.repeat(2,1,1)
                     pred = surfPos_model(_surfPos_, timesteps, class_label)
@@ -143,7 +143,7 @@ def sample(eval_args):
 
             ddpm_scheduler.set_timesteps(1000)  
             for t in tqdm(ddpm_scheduler.timesteps[-250:]):   
-                timesteps = t.reshape(-1).cuda()
+                timesteps = t.reshape(-1).to(device)
                 if class_label is not None:
                     _surfPos_ = surfPos.repeat(2,1,1)
                     pred = surfPos_model(_surfPos_, timesteps, class_label)
@@ -179,8 +179,8 @@ def sample(eval_args):
                 surfPos_deduplicate.append(bbox_padded)
                 surfMask_deduplicate.append(mask_padded)
 
-            surfPos = torch.stack(surfPos_deduplicate).cuda()
-            surfMask = torch.vstack(surfMask_deduplicate).cuda()
+            surfPos = torch.stack(surfPos_deduplicate).to(device)
+            surfMask = torch.vstack(surfMask_deduplicate).to(device)
 
 
             #################################
@@ -190,7 +190,7 @@ def sample(eval_args):
             
             pndm_scheduler.set_timesteps(200)   
             for t in tqdm(pndm_scheduler.timesteps): 
-                timesteps = t.reshape(-1).cuda()
+                timesteps = t.reshape(-1).to(device)
                 if class_label is not None:
                     _surfZ_ = surfZ.repeat(2,1,1)
                     _surfPos_ = surfPos.repeat(2,1,1)
@@ -205,11 +205,11 @@ def sample(eval_args):
             ########################################
             # STEP 2-1: generate the edge position #
             ########################################
-            edgePos = randn_tensor((batch_size, num_surfaces, num_edges, 6)).cuda()
+            edgePos = randn_tensor((batch_size, num_surfaces, num_edges, 6)).to(device)
           
             pndm_scheduler.set_timesteps(200)  
             for t in tqdm(pndm_scheduler.timesteps[:158]):  
-                timesteps = t.reshape(-1).cuda()   
+                timesteps = t.reshape(-1).to(device)   
                 if class_label is not None:
                     _surfZ_ = surfZ.repeat(2,1,1)
                     _surfPos_ = surfPos.repeat(2,1,1)
@@ -223,7 +223,7 @@ def sample(eval_args):
 
             ddpm_scheduler.set_timesteps(1000)  
             for t in tqdm(ddpm_scheduler.timesteps[-250:]):
-                timesteps = t.reshape(-1).cuda()   
+                timesteps = t.reshape(-1).to(device)   
                 if class_label is not None:
                     _surfZ_ = surfZ.repeat(2,1,1)
                     _surfPos_ = surfPos.repeat(2,1,1)
@@ -264,11 +264,11 @@ def sample(eval_args):
             ##############################
             # STEP 2-3: generate edge zv #
             ##############################   
-            edgeZV = randn_tensor((batch_size, num_surfaces, num_edges, 18)).cuda()
+            edgeZV = randn_tensor((batch_size, num_surfaces, num_edges, 18)).to(device)
 
             pndm_scheduler.set_timesteps(200)   
             for t in tqdm(pndm_scheduler.timesteps):
-                timesteps = t.reshape(-1).cuda()   
+                timesteps = t.reshape(-1).to(device)   
                 if class_label is not None:
                     _surfZ_ = surfZ.repeat(2,1,1)
                     _surfPos_ = surfPos.repeat(2,1,1)
@@ -345,9 +345,9 @@ def sample(eval_args):
         # Decode unique faces / edges
         with torch.no_grad():
             with torch.cuda.amp.autocast():
-                surf_ncs_cad = surf_vae(torch.FloatTensor(unique_faces).cuda().unflatten(-1,torch.Size([16,3])).permute(0,2,1).unflatten(-1,torch.Size([4,4])))
+                surf_ncs_cad = surf_vae(torch.FloatTensor(unique_faces).to(device).unflatten(-1,torch.Size([16,3])).permute(0,2,1).unflatten(-1,torch.Size([4,4])))
                 surf_ncs_cad = surf_ncs_cad.permute(0,2,3,1).detach().cpu().numpy()
-                edge_ncs_cad = edge_vae(torch.FloatTensor(unique_edges).cuda().unflatten(-1,torch.Size([4,3])).permute(0,2,1))
+                edge_ncs_cad = edge_vae(torch.FloatTensor(unique_edges).to(device).unflatten(-1,torch.Size([4,3])).permute(0,2,1))
                 edge_ncs_cad = edge_ncs_cad.permute(0,2,1).detach().cpu().numpy()
 
         #### 3-3: Joint Optimize ###

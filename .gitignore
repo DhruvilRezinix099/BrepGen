@@ -161,3 +161,14 @@ cython_debug/
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 .idea/
+
+# Models
+abc_ldm_surfpos.pt
+abc_ldm_surfz.pt
+abc_ldm_edgepos.pt
+abc_ldm_edgez.pt
+abc_vae_surf.pt
+abc_vae_edge.pt
+
+# Temp files
+# temp.txt

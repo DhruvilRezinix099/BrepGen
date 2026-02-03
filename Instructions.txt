@@ -1,0 +1,24 @@
+conda create --name brepgen_env python=3.9 -y
+conda activate brepgen_env
+
+pip install -r requirements.txt
+pip install chamferdist
+
+python sample.py --mode abc
+
+
+
+pip install --upgrade diffusers
+pip install "huggingface-hub<1.0,>=0.30.0" --force-reinstall
+
+conda run -n brepgen_env pip show diffusers huggingface-hub
+conda run -n brepgen_env pip install --upgrade diffusers
+conda install -n brepgen_env -c conda-forge pythonocc-core -y
+conda run -n brepgen_env python --version
+conda run -n brepgen_env pip show pythonocc-core
+conda list -n brepgen_env pythonocc
+conda remove -n brepgen_env pythonocc-core -y
+conda run -n brepgen_env pip install pythonocc-core
+conda install -n brepgen_env -c conda-forge pythonocc-core=7.7.2 -y
+conda run -n brepgen_env pip show torch
+conda run -n brepgen_env pip install chamferdist --no-build-isolation
